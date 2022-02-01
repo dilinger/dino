@@ -18,6 +18,7 @@ public class Dino.Ui.FreeDesktopNotifier : NotificationProvider, Object {
     private HashMap<Call, uint32> call_notifications = new HashMap<Call, uint32>(Call.hash_func, Call.equals_func);
 
     public FreeDesktopNotifier(StreamInteractor stream_interactor, DBusNotifications dbus_notifications) {
+        print("FreeDesktopNotifier\n");
         this.stream_interactor = stream_interactor;
         this.dbus_notifications = dbus_notifications;
 
@@ -38,6 +39,8 @@ public class Dino.Ui.FreeDesktopNotifier : NotificationProvider, Object {
             }
         }
 
+        print(@"$supports_body_markup $supports_body_markup\n");
+
         dbus_notifications.action_invoked.connect((id, action) => {
             if (action_listeners.has_key(id) && action_listeners[id].has_key(action)) {
                 action_listeners[id][action].func();
@@ -57,8 +60,10 @@ public class Dino.Ui.FreeDesktopNotifier : NotificationProvider, Object {
         string body  = "";
         if (supports_body_hyperlinks) {
             body = Util.parse_add_markup(message.body, null, true, false);
+            print(body + "\n");
         } else if (supports_body_markup) {
             body = Markup.escape_text(message.body);
+            print(body + "\n");
         } else {
             body = message.body;
         }
