@@ -346,6 +346,40 @@ public class MessageProcessor : StreamInteractionModule, Object {
         Conversation? conversation = stream_interactor.get_module(ConversationManager.IDENTITY).get_conversation_for_message(message);
         if (conversation == null) return;
 
+/*
+        if (message.direction == Entities.Message.DIRECTION_RECEIVED) {
+            Jid? from = message_stanza.from;
+	    if (from != null && message_stanza.type_ == "chat") {
+		string body = message_stanza.body;
+ 	        if (from.domainpart == "cheogram.com" && body.has_prefix("<xmpp:+")) {
+		    int end = body.index_of(">");
+		    string? actual_from = end < 0 || end > 3000 ? null : body.slice("<xmpp:".length, end);
+		    try {
+          	        stderr.printf("on_message_received: chat msg received from '%s': \"%s\"\n", from.to_string(), body);
+		        stderr.printf("has xmpp prefix w/ jid '%s'!\n", actual_from);
+			Jid? j = new Jid(actual_from);
+			string? s = Dino.get_real_display_name(stream_interactor,
+				    account, j);
+			if (s != null) {
+			    stderr.printf("real name from the roster: '%s'\n", s);
+			    string newbody = "<" + s + ">" + body.slice(end+1, body.length);
+			    stderr.printf("newbody: %s\n", newbody);
+			    message_stanza.body = newbody;
+			    
+//			    message_stanza.body.replace("<xmpp:" + actual_from + ">,
+//					"<" + s + ">");
+			    //string newbody = "<" + s + body[end];
+			    
+ 			}
+		    } catch (InvalidJidError e) {
+			// it's fine
+            	    } 
+                }
+            }
+        }
+*/
+
+
         // MAM state database update
         Xep.MessageArchiveManagement.MessageFlag? mam_flag = Xep.MessageArchiveManagement.MessageFlag.get_flag(message_stanza);
         if (mam_flag == null) {
@@ -590,6 +624,33 @@ public class MessageProcessor : StreamInteractionModule, Object {
 
         public override async bool run(Entities.Message message, Xmpp.MessageStanza stanza, Conversation conversation) {
             if (message.body == null) return true;
+
+            if (message.direction == Entities.Message.DIRECTION_RECEIVED) {
+                Jid? from = stanza.from;
+                if (from != null && stanza.type_ == "chat") {
+                    string body = stanza.body;
+                    stderr.printf("on_message_received: chat msg received from '%s': \"%s\"\n", from.to_string(), body);
+                    if (from.domainpart == "cheogram.com" && body.has_prefix("<xmpp:+")) {
+                        int end = body.index_of(">");
+                        string? actual_from = end < 0 || end > 3000 ? null : body.slice("<xmpp:".length, end);
+                        try {
+                            stderr.printf("has xmpp prefix w/ jid '%s'!\n", actual_from);
+                            Jid? j = new Jid(actual_from);
+                            string? s = Dino.get_real_display_name(stream_interactor,
+                                        conversation.account, j);
+                            if (s != null) {
+                                 stderr.printf("real name from the roster: '%s'\n", s);
+                                 string newbody = "<" + s + ">" + body.slice(end+1, body.length);
+                                 stderr.printf("newbody: %s\n", newbody);
+                                 message.body = newbody;
+                            }
+                        } catch (InvalidJidError e) {
+                            // it's fine
+                        }
+                    }
+                }
+            }
+
             stream_interactor.get_module(ContentItemStore.IDENTITY).insert_message(message, conversation);
             return false;
         }
