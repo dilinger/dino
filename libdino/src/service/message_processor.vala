@@ -635,14 +635,18 @@ public class MessageProcessor : StreamInteractionModule, Object {
                         string? actual_from = end < 0 || end > 3000 ? null : body.slice("<xmpp:".length, end);
                         try {
                             stderr.printf("has xmpp prefix w/ jid '%s'!\n", actual_from);
-                            Jid? j = new Jid(actual_from);
+                            Jid? from_jid = new Jid(actual_from);
                             string? s = Dino.get_real_display_name(stream_interactor,
-                                        conversation.account, j);
+                                        conversation.account, from_jid);
                             if (s != null) {
                                  stderr.printf("real name from the roster: '%s'\n", s);
-                                 string newbody = "<" + s + ">" + body.slice(end+1, body.length);
-                                 stderr.printf("newbody: %s\n", newbody);
-                                 message.body = newbody;
+                                 int new_start = end + 2; // Drop the space, too.
+                                 if (body.length < new_start) {
+                                     new_start = body.length;
+                                 }
+                                 message.body = body.slice(new_start, body.length);
+                                 message.counterpart = from_jid;
+                                 stderr.printf("newbody: %s\n", message.body);
                             }
                         } catch (InvalidJidError e) {
                             // it's fine
